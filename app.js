@@ -455,10 +455,24 @@ class MatchAnalyzer {
 
     newMatch() {
         if (confirm('¿Estás seguro de que quieres iniciar un nuevo partido? Se perderán todos los datos del partido actual.')) {
-            // SOLUCIÓN 1: Limpiar localStorage para eliminar caché de partidos anteriores
-            console.log('Limpiando localStorage para nuevo partido...');
+            // CORRECCIÓN: Limpieza selectiva para mantener historial de partidos guardados
+            console.log('Limpiando datos del partido anterior...');
+            
+            // SOLUCIÓN MEJORADA: Limpiar solo los datos del partido actual
+            // NO tocar historial de partidos guardados ni base de jugadores
+            const savedMatches = localStorage.getItem('atletico_base_matches');
+            const savedPlayers = localStorage.getItem('atletico_base_players');
+            const savedFollowups = localStorage.getItem('atletico_followups');
+            
+            // Limpiar todo
             localStorage.clear();
-            console.log('✓ localStorage limpiado - No habrá datos residuales de goles/tarjetas');
+            
+            // Restaurar datos importantes (NO el historial del partido anterior)
+            if (savedPlayers) localStorage.setItem('atletico_base_players', savedPlayers);
+            if (savedMatches) localStorage.setItem('atletico_base_matches', savedMatches);
+            if (savedFollowups) localStorage.setItem('atletico_followups', savedFollowups);
+            
+            console.log('✓ Datos del partido anterior limpiados - Historial preservado');
             
             // Reset de datos del partido
             this.matchData = {
