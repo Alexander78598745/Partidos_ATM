@@ -1,14 +1,38 @@
 // Service Worker para Análisis de Partidos - Atlético de Madrid
 // Permite funcionamiento offline de la aplicación
 
-const CACHE_NAME = 'atletico-analyzer-v1';
+const CACHE_NAME = 'atletico-analyzer-v2';
 const urlsToCache = [
     './',
     './index.html',
     './styles.css',
     './app.js',
     './manifest.json',
-    './escudo_atletico.png'
+    './escudo_atletico.png',
+    // Iconos SVG locales
+    './icons/calendar.svg',
+    './icons/card.svg',
+    './icons/clipboard-list.svg',
+    './icons/clock.svg',
+    './icons/download.svg',
+    './icons/edit.svg',
+    './icons/folder-open.svg',
+    './icons/hash.svg',
+    './icons/home.svg',
+    './icons/map-pin.svg',
+    './icons/minus.svg',
+    './icons/pause.svg',
+    './icons/play.svg',
+    './icons/plus.svg',
+    './icons/plus-circle.svg',
+    './icons/save.svg',
+    './icons/square.svg',
+    './icons/target.svg',
+    './icons/trophy.svg',
+    './icons/user-check.svg',
+    './icons/user-plus.svg',
+    './icons/user-x.svg',
+    './icons/users.svg'
 ];
 
 // Instalación del Service Worker
