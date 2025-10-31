@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEGUIMIENTO PARTIDO - Atlético de Madrid</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#CE2029">
@@ -31,7 +29,7 @@
                     <img src="icons/clipboard-list.svg" alt="Lista" class="icon-svg">
                     <div class="app-title-text">
                         <span>Análisis de Partido</span>
-                        <div class="app-version">V.6.1</div>
+                        <div class="app-version">V.6.2</div>
                     </div>
                 </div>
             </div>
@@ -511,21 +509,6 @@
     </div>
 
     <script src="app.js"></script>
-    <script>
-        // Inicialización optimizada de iconos
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar que Lucide se haya cargado antes de inicializar
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            } else {
-                // Si Lucide no está listo, esperamos un poco y reintentar
-                setTimeout(() => {
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }, 100);
-            }
-        });
-    </script>
+
 </body>
 </html>

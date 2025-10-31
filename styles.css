@@ -38,6 +38,31 @@
     --text-secondary: #6c757d;
 }
 
+/* Fuentes locales para funcionalidad offline */
+@font-face {
+    font-family: 'Orbitron';
+    src: url('fonts/Orbitron-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Orbitron';
+    src: url('fonts/Orbitron-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Orbitron';
+    src: url('fonts/Orbitron-Black.woff2') format('woff2');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* Hero Header con escudo y degradado */
 .hero-header {
     position: relative;

@@ -1,7 +1,7 @@
 // Service Worker para Análisis de Partidos - Atlético de Madrid
 // Permite funcionamiento offline de la aplicación
 
-const CACHE_NAME = 'atletico-analyzer-v2';
+const CACHE_NAME = 'atletico-analyzer-v3';
 const urlsToCache = [
     './',
     './index.html',
@@ -32,7 +32,11 @@ const urlsToCache = [
     './icons/user-check.svg',
     './icons/user-plus.svg',
     './icons/user-x.svg',
-    './icons/users.svg'
+    './icons/users.svg',
+    // Fuentes locales para offline
+    './fonts/Orbitron-Regular.woff2',
+    './fonts/Orbitron-Bold.woff2',
+    './fonts/Orbitron-Black.woff2'
 ];
 
 // Instalación del Service Worker
