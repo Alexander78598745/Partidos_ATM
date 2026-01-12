@@ -51,6 +51,7 @@ class MatchAnalyzer {
         // Variables para control de event listeners
         this.otherModalsConfigured = false;
         this.modalClickHandler = null;
+        this.matchTimerInterval = null; // Variable para almacenar el intervalo del cronómetro
         
         this.init();
     }
@@ -66,6 +67,7 @@ class MatchAnalyzer {
         
         this.setupEventListeners();
         this.setupVisibilityHandlers(); // Nuevo: manejo de visibilidad
+        this.initAutoSave(); // Nuevo: guardado automático periódico
         this.renderPlayers();
         this.setupDefaultMatch();
         this.updateTimelineDisplay();
@@ -186,56 +188,111 @@ class MatchAnalyzer {
 
     // Método para prevenir reinicios accidentales sin pausar el cronómetro
     setupVisibilityHandlers() {
+        console.log('[Lifecycle] Configurando manejadores de visibilidad...');
+        
         // Prevenir recargas accidentales durante partidos activos
         window.addEventListener('beforeunload', (e) => {
             if (this.matchData.isRunning || this.matchData.events.length > 0) {
+                this.saveMatchData('before-unload');
                 e.preventDefault();
                 e.returnValue = '¿Estás seguro de que quieres salir? Se perderán los datos del partido actual.';
                 return e.returnValue;
             }
         });
-
+        
         // Handler robusto para cambios de visibilidad (minimizar/maximizar tablet)
         document.addEventListener('visibilitychange', () => {
-            console.log('Cambio de visibilidad detectado:', document.hidden ? 'OCULTA' : 'VISIBLE');
+            console.log('[Lifecycle] Cambio de visibilidad detectado:', document.hidden ? 'OCULTA' : 'VISIBLE');
             
             if (document.hidden) {
                 // Página se va a ocultar (minimizar)
-                console.log('Guardando estado antes de minimizar...');
-                this.saveMatchData();
-                this.savePlayersToStorage();
+                console.log('[Lifecycle] Guardando estado antes de minimizar...');
+                this.saveMatchData('visibility-hidden');
             } else {
                 // Página vuelve a ser visible (maximizar/restaurar)
-                console.log('Restaurando estado después de maximizar...');
+                console.log('[Lifecycle] Restaurando estado después de maximizar...');
                 
-                // Actualizar cronómetro inmediatamente
+                // Restaurar estado del partido
+                this.loadPlayersFromStorage();
+                
+                // REINICIAR el cronómetro si el partido está en curso
                 if (this.matchData && this.matchData.isRunning) {
-                    this.updateMatchTimer();
-                    console.log('✓ Cronómetro actualizado');
+                    this.restartMatchTimer();
+                    console.log('[Lifecycle] Cronómetro reiniciado correctamente');
                 }
                 
-                // Restaurar estado de jugadores y re-renderizar
+                // Renderizar jugadores titulares
                 setTimeout(() => {
-                    this.loadPlayersFromStorage();
-                    this.renderPlayers();
-                    console.log('✓ Jugadores renderizados');
+                    this.renderPlayersOnField();
+                    console.log('[Lifecycle] Titulares renderizados');
                 }, 100);
+                
+                // Renderizar suplentes
+                setTimeout(() => {
+                    this.renderSubstitutes();
+                    console.log('[Lifecycle] Suplentes renderizados');
+                }, 150);
+                
+                // Renderizar jugadores desconvocados
+                setTimeout(() => {
+                    this.renderUncalledPlayersList();
+                    console.log('[Lifecycle] Desconvocados renderizados');
+                }, 200);
                 
                 // Actualizar marcadores de goles
                 setTimeout(() => {
                     this.updateGoalDisplays();
-                    console.log('✓ Marcadores actualizados');
-                }, 200);
+                    console.log('[Lifecycle] Marcadores actualizados');
+                }, 250);
                 
-                // Re-renderizar campo con posiciones actuales
+                // Actualizar cronología
                 setTimeout(() => {
-                    this.renderField();
-                    console.log('✓ Campo re-renderizado');
+                    this.updateTimelineDisplay();
+                    console.log('[Lifecycle] Cronología actualizada');
                 }, 300);
                 
-                console.log('Estado completo restaurado después de maximizar');
+                // Actualizar controles del partido
+                setTimeout(() => {
+                    this.updateControls();
+                    this.updatePeriodDisplay(this.getPeriodDisplayName());
+                    console.log('[Lifecycle] Controles actualizados');
+                }, 350);
+                
+                console.log('[Lifecycle] Estado completo restaurado después de maximizar');
             }
         });
+        
+        console.log('[Lifecycle] Manejadores de visibilidad configurados');
+    }
+    
+    // Método auxiliar para obtener el nombre del período
+    getPeriodDisplayName() {
+        const periodNames = {
+            'pre': 'Pre-partido',
+            'first': '1er Tiempo',
+            'halftime': 'Descanso',
+            'second': '2do Tiempo',
+            'finished': 'Finalizado'
+        };
+        return periodNames[this.matchData.period] || 'Pre-partido';
+    }
+    
+    // Método para actualizar el display del cronómetro manualmente
+    updateTimerDisplay() {
+        const minutes = Math.floor(this.matchData.currentTime / 60);
+        const seconds = this.matchData.currentTime % 60;
+        const timerElement = document.getElementById('matchTimer');
+        if (timerElement) {
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    // Método para renderizar lista de desconvocados
+    renderUncalledPlayersList() {
+        const uncalledSection = document.getElementById('uncalledPlayersManagement');
+        if (uncalledSection && uncalledSection.style.display !== 'none') {
+            this.showUncalledPlayersManagement();
+        }
     }
 
     setupModalEventListeners() {
@@ -547,7 +604,41 @@ class MatchAnalyzer {
 
         this.updatePlayersMinutes();
 
-        setTimeout(() => this.updateMatchTimer(), 1000);
+        // Usar setInterval almacenado para poder detenerlo después
+        if (!this.matchTimerInterval) {
+            this.matchTimerInterval = setInterval(() => this.updateMatchTimer(), 1000);
+        }
+    }
+    
+    // Método para reiniciar el cronómetro (necesario tras minimizar/maximizar)
+    restartMatchTimer() {
+        // Detener intervalo anterior si existe
+        if (this.matchTimerInterval) {
+            clearInterval(this.matchTimerInterval);
+            this.matchTimerInterval = null;
+        }
+        
+        // Actualizar el tiempo actual basándose en startTime
+        if (this.matchData.isRunning && this.matchData.startTime) {
+            const now = new Date();
+            const elapsed = Math.floor((now - this.matchData.startTime) / 1000);
+            
+            // Actualizar currentTime con el tiempo transcurrido real
+            this.matchData.currentTime = elapsed;
+            
+            // Actualizar display inmediatamente
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const timerElement = document.getElementById('matchTimer');
+            if (timerElement) {
+                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Iniciar nuevo intervalo
+            this.matchTimerInterval = setInterval(() => this.updateMatchTimer(), 1000);
+            
+            console.log(`[Timer] Cronómetro reiniciado: ${minutes}:${seconds.toString().padStart(2, '0')}`);
+        }
     }
 
     updatePlayersMinutes() {
@@ -973,6 +1064,138 @@ class MatchAnalyzer {
 
 🖱️ Puedes MOVER los jugadores arrastrándolos por el campo
 🎯 Puedes hacer CLIC en un jugador para registrar acciones (gol, tarjeta, cambio)`);
+    }
+
+    // Método de guardado automático periódico
+    initAutoSave() {
+        console.log('[System] Iniciando auto-guardado cada 5 segundos...');
+        setInterval(() => {
+            this.saveMatchData('auto-save');
+        }, 5000);
+    }
+
+    // Método para verificar integridad de datos
+    verifyDataIntegrity() {
+        console.log('[System] Verificando integridad de datos...');
+        
+        const checks = {
+            players: this.players?.length > 0,
+            starters: this.players?.filter(p => p.isStarter).length > 0 || this.players?.length === 0,
+            uncalled: Array.isArray(this.players?.filter(p => p.isUncalled)),
+            matchData: !!this.matchData,
+            events: Array.isArray(this.matchData?.events)
+        };
+        
+        console.log('[System] Estado de verificaciones:', checks);
+        return checks;
+    }
+
+    // Método para cargar jugadores desde localStorage
+    loadPlayersFromStorage() {
+        console.log('[Load] Intentando recuperar estado del partido...');
+        
+        // Primero intentar cargar estado actual del partido
+        const currentMatchRaw = localStorage.getItem('atletico_base_current_match');
+        const savedPlayersRaw = localStorage.getItem('atletico_base_players');
+        
+        let restoredFromMatch = false;
+        
+        // Intentar restaurar desde estado completo del partido
+        if (currentMatchRaw) {
+            try {
+                const matchState = JSON.parse(currentMatchRaw);
+                
+                console.log('[Load] Restaurando desde estado completo guardado...');
+                
+                // Restaurar información del partido
+                if (matchState.matchInfo) {
+                    document.getElementById('matchDate').value = matchState.matchInfo.date || '';
+                    document.getElementById('matchVenue').value = matchState.matchInfo.venue || '';
+                    document.getElementById('rivalName').value = matchState.matchInfo.rival || '';
+                    document.getElementById('homeAway').value = matchState.matchInfo.homeAway || 'local';
+                    document.getElementById('category').value = matchState.matchInfo.category || 'ALEVIN B F11';
+                    document.getElementById('matchDay').value = matchState.matchInfo.matchDay || '';
+                    document.getElementById('awayTeamName').textContent = matchState.matchInfo.rival || 'RIVAL';
+                }
+                
+                // Restaurar estado del cronómetro
+                if (matchState.timer) {
+                    this.matchData.startTime = matchState.timer.startTime ? new Date(matchState.timer.startTime) : null;
+                    this.matchData.currentTime = matchState.timer.currentTime || 0;
+                    this.matchData.firstHalfDuration = matchState.timer.firstHalfDuration || 0;
+                    this.matchData.period = matchState.timer.period || 'pre';
+                    this.matchData.isRunning = matchState.timer.isRunning || false;
+                    
+                    console.log('[Load] Estado del cronómetro restaurado:', {
+                        currentTime: this.matchData.currentTime,
+                        firstHalfDuration: this.matchData.firstHalfDuration,
+                        period: this.matchData.period,
+                        isRunning: this.matchData.isRunning
+                    });
+                }
+                
+                // Restaurar marcador
+                if (matchState.score) {
+                    this.matchData.homeScore = matchState.score.homeScore || 0;
+                    this.matchData.awayScore = matchState.score.awayScore || 0;
+                }
+                
+                // Restaurar jugadores
+                if (matchState.players && Array.isArray(matchState.players)) {
+                    this.players = matchState.players.map(p => ({
+                        ...p,
+                        // Asegurar que las propiedades numéricas son números
+                        minutesPlayed: p.minutesPlayed || 0,
+                        entryMinute: p.entryMinute ?? null,
+                        exitMinute: p.exitMinute ?? null,
+                        previousMinutes: p.previousMinutes || 0,
+                        yellowCards: p.yellowCards || 0,
+                        goals: p.goals || 0,
+                        x: p.x ?? 50,
+                        y: p.y ?? 50
+                    }));
+                    
+                    console.log(`[Load] Jugadores restaurados: ${this.players.length}`);
+                }
+                
+                // Restaurar cronología
+                if (matchState.events && Array.isArray(matchState.events)) {
+                    this.matchData.events = matchState.events;
+                    console.log(`[Load] Eventos restaurados: ${this.matchData.events.length}`);
+                }
+                
+                // Restaurar sustituciones
+                if (matchState.substitutions !== undefined) {
+                    this.matchData.substitutions = matchState.substitutions;
+                }
+                
+                // Restaurar titulares originales
+                if (matchState.originalStarters) {
+                    this.matchData.originalStarters = matchState.originalStarters;
+                }
+                
+                restoredFromMatch = true;
+                console.log('[Load] Estado completo restaurado correctamente');
+                
+            } catch (error) {
+                console.error('[Load Error] Error al parsear estado guardado:', error);
+            }
+        }
+        
+        // Si no se pudo restaurar desde matchState, intentar solo jugadores
+        if (!restoredFromMatch && savedPlayersRaw) {
+            try {
+                this.players = JSON.parse(savedPlayersRaw);
+                console.log(`[Load] Jugadores cargados desde localStorage: ${this.players.length}`);
+            } catch (error) {
+                console.error('[Load Error] Error al cargar jugadores:', error);
+            }
+        }
+        
+        // Verificar integridad
+        this.verifyDataIntegrity();
+        
+        return this.players;
     }
 
     // Sistema de gestión de jugadores desconvocados
@@ -3005,22 +3228,98 @@ class MatchAnalyzer {
         localStorage.setItem('atletico_base_players', JSON.stringify(this.players));
     }
 
-    saveMatchData() {
-        const matchInfo = {
-            date: document.getElementById('matchDate').value,
-            venue: document.getElementById('matchVenue').value,
-            rival: document.getElementById('rivalName').value,
-            homeAway: document.getElementById('homeAway').value,
-            category: document.getElementById('category').value,
-            score: `${this.matchData.homeScore}-${this.matchData.awayScore}`,
-            events: this.matchData.events,
-            players: this.players,
-            timestamp: new Date()
-        };
-
-        const matches = JSON.parse(localStorage.getItem('atletico_base_matches')) || [];
-        matches.push(matchInfo);
-        localStorage.setItem('atletico_base_matches', JSON.stringify(matches));
+    saveMatchData(source = 'manual') {
+        try {
+            console.log(`[Save] Guardando datos del partido desde: ${source}`);
+            
+            // Construir objeto de estado completo
+            const matchState = {
+                version: '6.2',
+                timestamp: Date.now(),
+                
+                // Datos del partido
+                matchInfo: {
+                    date: document.getElementById('matchDate').value,
+                    venue: document.getElementById('matchVenue').value,
+                    rival: document.getElementById('rivalName').value,
+                    homeAway: document.getElementById('homeAway').value,
+                    category: document.getElementById('category').value,
+                    matchDay: document.getElementById('matchDay').value
+                },
+                
+                // Estado del cronómetro
+                timer: {
+                    startTime: this.matchData.startTime ? this.matchData.startTime.getTime() : null,
+                    currentTime: this.matchData.currentTime,
+                    firstHalfDuration: this.matchData.firstHalfDuration,
+                    period: this.matchData.period,
+                    isRunning: this.matchData.isRunning
+                },
+                
+                // Marcador
+                score: {
+                    homeScore: this.matchData.homeScore,
+                    awayScore: this.matchData.awayScore
+                },
+                
+                // Jugadores con estado completo
+                players: this.players.map(player => ({
+                    id: player.id,
+                    name: player.name,
+                    alias: player.alias,
+                    number: player.number,
+                    position: player.position,
+                    isStarter: player.isStarter,
+                    isUncalled: player.isUncalled,
+                    minutesPlayed: player.minutesPlayed,
+                    entryMinute: player.entryMinute,
+                    exitMinute: player.exitMinute,
+                    previousMinutes: player.previousMinutes,
+                    enteredDuringHalftime: player.enteredDuringHalftime,
+                    yellowCards: player.yellowCards,
+                    goals: player.goals,
+                    x: player.x,
+                    y: player.y
+                })),
+                
+                // Cronología de eventos
+                events: this.matchData.events,
+                
+                // Sustituciones
+                substitutions: this.matchData.substitutions,
+                
+                // Titulares originales para PDF
+                originalStarters: this.matchData.originalStarters
+            };
+            
+            // Guardar estado del partido actual
+            localStorage.setItem('atletico_base_current_match', JSON.stringify(matchState));
+            
+            // También guardar en historial
+            const matches = JSON.parse(localStorage.getItem('atletico_base_matches')) || [];
+            // Actualizar el último partido si existe, o añadir nuevo
+            const existingMatchIndex = matches.findIndex(m => 
+                m.matchInfo?.date === matchState.matchInfo.date && 
+                m.matchInfo?.rival === matchState.matchInfo.rival
+            );
+            
+            if (existingMatchIndex >= 0) {
+                matches[existingMatchIndex] = matchState;
+            } else {
+                matches.push(matchState);
+            }
+            localStorage.setItem('atletico_base_matches', JSON.stringify(matches));
+            
+            console.log('[Save] Estado guardado correctamente:', {
+                players: matchState.players.length,
+                events: matchState.events.length,
+                timer: matchState.timer,
+                score: matchState.score
+            });
+            
+        } catch (error) {
+            console.error('[Save Error] Fallo crítico al guardar datos:', error);
+        }
     }
 
     // NUEVA FUNCIONALIDAD: Editar eventos de gol
