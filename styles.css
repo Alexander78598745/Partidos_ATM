@@ -393,9 +393,13 @@ body {
     color: white;
 }
 
-.control-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+.control-btn.next-match {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.control-btn.next-match:hover {
+    background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
 }
 
 .control-btn:disabled {
@@ -1881,11 +1885,20 @@ body {
     color: #666;
 }
 
-.followup-actions {
-    display: flex;
-    gap: 8px;
+.followup-meta {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
 }
 
+.no-followups {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Estilos para botones de acción de seguimientos y próximos partidos */
 .followup-btn {
     padding: 6px 12px;
     border: none;
@@ -1901,6 +1914,11 @@ body {
     color: white;
 }
 
+.followup-btn.edit {
+    background: #6c757d;
+    color: white;
+}
+
 .followup-btn.delete {
     background: #dc3545;
     color: white;
@@ -1911,11 +1929,44 @@ body {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.no-followups {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-    font-style: italic;
+/* Estilos específicos para próximos partidos */
+.next-match-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.next-match-info-summary {
+    display: flex;
+    justify-content: space-around;
+    gap: 15px;
+    font-size: 13px;
+}
+
+.next-match-info-summary .info-starters {
+    color: #28a745;
+}
+
+.next-match-info-summary .info-substitutes {
+    color: #17a2b8;
+}
+
+.next-match-info-summary .info-uncalled {
+    color: #dc3545;
+}
+
+.next-match-item {
+    border-left: 4px solid #667eea;
+}
+
+.next-match-item .followup-name {
+    color: #667eea;
+}
+
+/* Icono de color para botón de próximo partido */
+.control-btn.next-match .icon-svg {
+    color: #a5b4fc;
 }
 
 /* Icono de tarjeta amarilla para jugadores */

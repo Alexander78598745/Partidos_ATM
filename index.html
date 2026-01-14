@@ -133,6 +133,8 @@
             <button id="exportPDF" class="control-btn export" disabled><img src="icons/download.svg" alt="Download" class="icon-svg">Exportar PDF</button>
             <button id="saveFollowUp" class="control-btn save"><img src="icons/save.svg" alt="Save" class="icon-svg">Guardar Seguimiento</button>
             <button id="loadFollowUp" class="control-btn load"><img src="icons/folder-open.svg" alt="Folder" class="icon-svg">Cargar Seguimiento</button>
+            <button id="saveNextMatch" class="control-btn next-match"><img src="icons/calendar.svg" alt="Calendar" class="icon-svg">Guardar Próximo Partido</button>
+            <button id="loadNextMatch" class="control-btn next-match"><img src="icons/clock.svg" alt="Clock" class="icon-svg">Cargar Próximo Partido</button>
             <button id="newMatch" class="control-btn new"><img src="icons/plus-circle.svg" alt="Plus" class="icon-svg">Nuevo Partido</button>
 
         </div>
@@ -500,9 +502,49 @@
                 <div id="savedFollowUpsList" class="saved-followups-list">
                     <!-- Se llenará dinámicamente -->
                 </div>
-                
+
                 <div class="modal-buttons">
                     <button id="cancelLoadFollowUp" class="cancel-btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para guardar próximo partido -->
+    <div id="saveNextMatchModal" class="modal">
+        <div class="modal-content">
+            <h3><img src="icons/calendar.svg" alt="Calendar" class="icon-svg">Guardar Alineación para Próximo Partido</h3>
+            <div class="save-followup-form">
+                <label>Nombre de la alineación:</label>
+                <input type="text" id="nextMatchName" placeholder="Ej: vs Real Madrid - Jornada 8" maxlength="50">
+
+                <label>Fecha del partido (opcional):</label>
+                <input type="date" id="nextMatchDate">
+
+                <div id="nextMatchPlayerInfo" class="next-match-info">
+                    <!-- Se llenará dinámicamente con el conteo de jugadores -->
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="confirmSaveNextMatch" class="confirm-btn">Guardar Alineación</button>
+                    <button id="cancelSaveNextMatch" class="cancel-btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para cargar próximo partido -->
+    <div id="loadNextMatchModal" class="modal">
+        <div class="modal-content">
+            <h3><img src="icons/clock.svg" alt="Clock" class="icon-svg">Cargar Alineación para Partido</h3>
+            <div class="load-followup-form">
+                <label>Alineaciones guardadas:</label>
+                <div id="savedNextMatchesList" class="saved-followups-list">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="cancelLoadNextMatch" class="cancel-btn">Cancelar</button>
                 </div>
             </div>
         </div>

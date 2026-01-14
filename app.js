@@ -156,6 +156,50 @@ class MatchAnalyzer {
         
         document.getElementById('newMatch').addEventListener('click', () => this.newMatch());
 
+        // Nuevos botones de próximo partido
+        const saveNextMatchBtn = document.getElementById('saveNextMatch');
+        const loadNextMatchBtn = document.getElementById('loadNextMatch');
+
+        if (saveNextMatchBtn) {
+            saveNextMatchBtn.addEventListener('click', () => {
+                console.log('Botón Guardar Próximo Partido clickeado');
+                this.showSaveNextMatchModal();
+            });
+            console.log('✅ Event listener para Guardar Próximo Partido configurado');
+        } else {
+            console.error('❌ No se encontró el botón saveNextMatch');
+        }
+
+        if (loadNextMatchBtn) {
+            loadNextMatchBtn.addEventListener('click', () => {
+                console.log('Botón Cargar Próximo Partido clickeado');
+                this.showLoadNextMatchModal();
+            });
+            console.log('✅ Event listener para Cargar Próximo Partido configurado');
+        } else {
+            console.error('❌ No se encontró el botón loadNextMatch');
+        }
+
+        // Botones de los modales de próximo partido
+        const confirmSaveNextMatchBtn = document.getElementById('confirmSaveNextMatch');
+        const cancelSaveNextMatchBtn = document.getElementById('cancelSaveNextMatch');
+        const cancelLoadNextMatchBtn = document.getElementById('cancelLoadNextMatch');
+
+        if (confirmSaveNextMatchBtn) {
+            confirmSaveNextMatchBtn.addEventListener('click', () => this.confirmSaveNextMatch());
+            console.log('✅ Event listener para confirmSaveNextMatch configurado');
+        }
+
+        if (cancelSaveNextMatchBtn) {
+            cancelSaveNextMatchBtn.addEventListener('click', () => this.closeModal('saveNextMatchModal'));
+            console.log('✅ Event listener para cancelSaveNextMatch configurado');
+        }
+
+        if (cancelLoadNextMatchBtn) {
+            cancelLoadNextMatchBtn.addEventListener('click', () => this.closeModal('loadNextMatchModal'));
+            console.log('✅ Event listener para cancelLoadNextMatch configurado');
+        }
+
 
         // Controles de goles
         document.getElementById('addHomeGoal').addEventListener('click', () => this.addGoal('home'));
@@ -520,9 +564,18 @@ class MatchAnalyzer {
             const savedMatches = localStorage.getItem('atletico_base_matches');
             const savedPlayers = localStorage.getItem('atletico_base_players');
             const savedFollowups = localStorage.getItem('atletico_followups');
+            const savedNextMatches = localStorage.getItem('atletico_next_matches');
             
             // Limpiar todo
             localStorage.clear();
+            
+            // Restaurar datos importantes (NO el historial del partido anterior)
+            if (savedPlayers) localStorage.setItem('atletico_base_players', savedPlayers);
+            if (savedMatches) localStorage.setItem('atletico_base_matches', savedMatches);
+            if (savedFollowups) localStorage.setItem('atletico_followups', savedFollowups);
+            if (savedNextMatches) localStorage.setItem('atletico_next_matches', savedNextMatches);
+            
+            console.log('✓ Datos del partido anterior limpiados - Historial preservado');
             
             // Restaurar datos importantes (NO el historial del partido anterior)
             if (savedPlayers) localStorage.setItem('atletico_base_players', savedPlayers);
@@ -3746,6 +3799,326 @@ class MatchAnalyzer {
     }
     
     // ========== FIN NUEVAS FUNCIONES PARA SEGUIMIENTOS ==========
+
+    // ========== NUEVAS FUNCIONES PARA PRÓXIMO PARTIDO ==========
+
+    // Mostrar modal para guardar próximo partido
+    showSaveNextMatchModal() {
+        console.log('=== FUNCIÓN showSaveNextMatchModal EJECUTADA ===');
+
+        // Limpiar inputs
+        const nameInput = document.getElementById('nextMatchName');
+        const dateInput = document.getElementById('nextMatchDate');
+
+        if (!nameInput || !dateInput) {
+            console.error('❌ No se encontraron los elementos del modal de próximo partido');
+            return;
+        }
+
+        nameInput.value = '';
+        dateInput.value = '';
+
+        // Sugerir un nombre basado en el rival configurado
+        const rival = document.getElementById('rivalName').value || 'Rival';
+        const jornada = document.getElementById('matchDay').value;
+        let suggestedName = `vs ${rival}`;
+        if (jornada) suggestedName += ` - Jornada ${jornada}`;
+        nameInput.value = suggestedName;
+
+        // Contar jugadores seleccionados
+        const startersCount = this.players.filter(p => p.isStarter).length;
+        const substitutesCount = this.players.filter(p => !p.isStarter && !p.isUncalled).length;
+        const uncalledCount = this.players.filter(p => p.isUncalled).length;
+
+        const infoDiv = document.getElementById('nextMatchPlayerInfo');
+        if (infoDiv) {
+            infoDiv.innerHTML = `
+                <div class="next-match-info-summary">
+                    <span class="info-starters"><strong>Titulares:</strong> ${startersCount}</span>
+                    <span class="info-substitutes"><strong>Suplentes:</strong> ${substitutesCount}</span>
+                    <span class="info-uncalled"><strong>Desconvocados:</strong> ${uncalledCount}</span>
+                </div>
+            `;
+        }
+
+        const modal = document.getElementById('saveNextMatchModal');
+        if (!modal) {
+            console.error('❌ No se encontró el modal saveNextMatchModal');
+            return;
+        }
+
+        modal.style.display = 'block';
+        console.log('✅ Modal de próximo partido mostrado exitosamente');
+    }
+
+    // Confirmar guardado de próximo partido
+    confirmSaveNextMatch() {
+        const name = document.getElementById('nextMatchName').value.trim();
+        const matchDate = document.getElementById('nextMatchDate').value;
+
+        if (!name) {
+            alert('Por favor, introduce un nombre para el próximo partido.');
+            return;
+        }
+
+        // Verificar que hay una alineación válida
+        const starters = this.players.filter(p => p.isStarter);
+        if (starters.length !== 11) {
+            alert(`Debes tener exactamente 11 titulares confirmados para guardar el próximo partido. Actualmente tienes ${starters.length}.`);
+            return;
+        }
+
+        // Crear objeto con los datos de la alineación
+        const nextMatchData = {
+            id: Date.now().toString(),
+            name: name,
+            matchDate: matchDate || null,
+            players: this.players.map(player => ({
+                id: player.id,
+                name: player.name,
+                alias: player.alias,
+                number: player.number,
+                position: player.position,
+                isStarter: player.isStarter,
+                isUncalled: player.isUncalled,
+                x: player.x,
+                y: player.y
+            })),
+            matchInfo: {
+                rival: document.getElementById('rivalName').value,
+                venue: document.getElementById('matchVenue').value,
+                homeAway: document.getElementById('homeAway').value,
+                category: document.getElementById('category').value,
+                matchDay: document.getElementById('matchDay').value
+            },
+            savedAt: new Date().toISOString()
+        };
+
+        // Guardar en localStorage
+        this.saveNextMatchToStorage(nextMatchData);
+
+        this.closeModal('saveNextMatchModal');
+        alert(`Alineación "${name}" guardada exitosamente para el próximo partido.`);
+    }
+
+    // Guardar próximo partido en localStorage
+    saveNextMatchToStorage(nextMatchData) {
+        const savedNextMatches = JSON.parse(localStorage.getItem('atletico_next_matches')) || [];
+
+        // Verificar si ya existe uno con el mismo nombre y actualizarlo
+        const existingIndex = savedNextMatches.findIndex(m => m.name === nextMatchData.name);
+        if (existingIndex >= 0) {
+            if (confirm(`Ya existe una alineación llamada "${nextMatchData.name}". ¿Deseas sobrescribirla?`)) {
+                savedNextMatches[existingIndex] = nextMatchData;
+            } else {
+                return;
+            }
+        } else {
+            savedNextMatches.push(nextMatchData);
+        }
+
+        localStorage.setItem('atletico_next_matches', JSON.stringify(savedNextMatches));
+        console.log('✅ Próximo partido guardado en localStorage');
+    }
+
+    // Mostrar modal para cargar próximo partido
+    showLoadNextMatchModal() {
+        console.log('=== FUNCIÓN showLoadNextMatchModal EJECUTADA ===');
+
+        this.renderSavedNextMatches();
+
+        const modal = document.getElementById('loadNextMatchModal');
+        if (!modal) {
+            console.error('❌ No se encontró el modal loadNextMatchModal');
+            return;
+        }
+
+        modal.style.display = 'block';
+        console.log('✅ Modal de cargar próximo partido mostrado');
+    }
+
+    // Renderizar lista de próximos partidos guardados
+    renderSavedNextMatches() {
+        const savedNextMatches = JSON.parse(localStorage.getItem('atletico_next_matches')) || [];
+        const container = document.getElementById('savedNextMatchesList');
+
+        if (savedNextMatches.length === 0) {
+            container.innerHTML = '<div class="no-followups">No hay alineaciones guardadas para próximos partidos.</div>';
+            return;
+        }
+
+        container.innerHTML = savedNextMatches.map(nextMatch => {
+            const savedDate = new Date(nextMatch.savedAt);
+            const formattedSavedDate = savedDate.toLocaleDateString('es-ES') + ' ' +
+                savedDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+            const matchDateStr = nextMatch.matchDate ?
+                new Date(nextMatch.matchDate).toLocaleDateString('es-ES') : 'Sin fecha';
+
+            const starters = nextMatch.players.filter(p => p.isStarter).length;
+            const substitutes = nextMatch.players.filter(p => !p.isStarter && !p.isUncalled).length;
+            const uncalled = nextMatch.players.filter(p => p.isUncalled).length;
+
+            return `
+                <div class="followup-item next-match-item">
+                    <div class="followup-info">
+                        <div class="followup-name">${nextMatch.name}</div>
+                        <div class="followup-details">
+                            Partido: ${matchDateStr} |
+                            Titulares: ${starters} |
+                            Suplentes: ${substitutes} |
+                            Desconvocados: ${uncalled}
+                        </div>
+                        <div class="followup-meta">
+                            Guardado: ${formattedSavedDate}
+                            ${nextMatch.matchInfo.rival ? `| Rival: ${nextMatch.matchInfo.rival}` : ''}
+                        </div>
+                    </div>
+                    <div class="followup-actions">
+                        <button class="followup-btn load" onclick="window.matchAnalyzer.loadNextMatch('${nextMatch.id}')">
+                            Cargar
+                        </button>
+                        <button class="followup-btn edit" onclick="window.matchAnalyzer.editNextMatch('${nextMatch.id}')">
+                            Editar
+                        </button>
+                        <button class="followup-btn delete" onclick="window.matchAnalyzer.deleteNextMatch('${nextMatch.id}')">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Cargar próximo partido específico
+    loadNextMatch(nextMatchId) {
+        const savedNextMatches = JSON.parse(localStorage.getItem('atletico_next_matches')) || [];
+        const nextMatch = savedNextMatches.find(m => m.id === nextMatchId);
+
+        if (!nextMatch) {
+            alert('Alineación no encontrada.');
+            return;
+        }
+
+        // Confirmar carga
+        if (!confirm(`¿Estás seguro de que quieres cargar la alineación "${nextMatch.name}"? Se perderán los datos actuales no guardados.`)) {
+            return;
+        }
+
+        // Restaurar jugadores desde la alineación guardada
+        this.players = nextMatch.players.map(player => ({
+            ...player,
+            minutesPlayed: 0,
+            entryMinute: null,
+            exitMinute: null,
+            previousMinutes: 0,
+            enteredDuringHalftime: false,
+            yellowCards: 0,
+            goals: 0
+        }));
+
+        // Restaurar información del partido si existe
+        if (nextMatch.matchInfo) {
+            document.getElementById('rivalName').value = nextMatch.matchInfo.rival || '';
+            document.getElementById('matchVenue').value = nextMatch.matchInfo.venue || '';
+            document.getElementById('homeAway').value = nextMatch.matchInfo.homeAway || 'local';
+            document.getElementById('matchDay').value = nextMatch.matchInfo.matchDay || '';
+            document.getElementById('awayTeamName').textContent = nextMatch.matchInfo.rival || 'RIVAL';
+        }
+
+        // Reset del partido
+        this.matchData = {
+            startTime: null,
+            currentTime: 0,
+            isRunning: false,
+            period: 'pre',
+            homeScore: 0,
+            awayScore: 0,
+            events: [],
+            substitutions: 0,
+            firstHalfDuration: 0,
+            originalStarters: []
+        };
+
+        // Actualizar pantalla
+        this.updateGoalDisplays();
+        this.updateControls();
+        this.updatePeriodDisplay('Pre-partido');
+        document.getElementById('matchTimer').textContent = '00:00';
+        document.getElementById('homeScore').textContent = '0';
+        document.getElementById('awayScore').textContent = '0';
+
+        // Renderizar todo
+        this.renderPlayers();
+        this.savePlayersToStorage();
+
+        this.closeModal('loadNextMatchModal');
+        alert(`Alineación "${nextMatch.name}" cargada exitosamente. ¡El partido está listo para iniciar!`);
+    }
+
+    // Editar próximo partido guardado
+    editNextMatch(nextMatchId) {
+        const savedNextMatches = JSON.parse(localStorage.getItem('atletico_next_matches')) || [];
+        const nextMatch = savedNextMatches.find(m => m.id === nextMatchId);
+
+        if (!nextMatch) {
+            alert('Alineación no encontrada.');
+            return;
+        }
+
+        // Cerrar el modal de carga
+        this.closeModal('loadNextMatchModal');
+
+        // Cargar la alineación temporalmente para editarla
+        this.players = nextMatch.players.map(player => ({
+            ...player,
+            minutesPlayed: 0,
+            entryMinute: null,
+            exitMinute: null,
+            previousMinutes: 0,
+            enteredDuringHalftime: false,
+            yellowCards: 0,
+            goals: 0
+        }));
+
+        // Restaurar información del partido si existe
+        if (nextMatch.matchInfo) {
+            document.getElementById('rivalName').value = nextMatch.matchInfo.rival || '';
+            document.getElementById('matchVenue').value = nextMatch.matchInfo.venue || '';
+            document.getElementById('homeAway').value = nextMatch.matchInfo.homeAway || 'local';
+            document.getElementById('matchDay').value = nextMatch.matchInfo.matchDay || '';
+        }
+
+        // Renderizar jugadores
+        this.renderPlayers();
+
+        alert(`Alineación "${nextMatch.name}" cargada para edición. Realiza los cambios y guárdala de nuevo.`);
+    }
+
+    // Eliminar próximo partido
+    deleteNextMatch(nextMatchId) {
+        const savedNextMatches = JSON.parse(localStorage.getItem('atletico_next_matches')) || [];
+        const nextMatch = savedNextMatches.find(m => m.id === nextMatchId);
+
+        if (!nextMatch) {
+            alert('Alineación no encontrada.');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de que quieres eliminar la alineación "${nextMatch.name}"?`)) {
+            return;
+        }
+
+        const updatedNextMatches = savedNextMatches.filter(m => m.id !== nextMatchId);
+        localStorage.setItem('atletico_next_matches', JSON.stringify(updatedNextMatches));
+
+        // Volver a renderizar la lista
+        this.renderSavedNextMatches();
+
+        alert(`Alineación "${nextMatch.name}" eliminada exitosamente.`);
+    }
+
+    // ========== FIN NUEVAS FUNCIONES PARA PRÓXIMO PARTIDO ==========
 }
 
 // Inicializar aplicación
