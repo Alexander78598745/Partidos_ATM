@@ -3,28 +3,32 @@
 
 // Lista de jugadores predefinidos del equipo base
 const DEFAULT_PLAYERS = [
-    { number: 5, fullName: "BLAGOEV MURIEL, JAIME RAFAEL", alias: "JAIME", position: "DEF" },
-    { number: 11, fullName: "CARPINTERO MONGE", alias: "TELMO", position: "FWD" },
-    { number: 2, fullName: "CHACON GARCIA, DIEGO", alias: "CHACON", position: "DEF" },
-    { number: 20, fullName: "DA SILVA SECO, LEO SOCRATES", alias: "LEO", position: "FWD" },
-    { number: 12, fullName: "DUMITRU, LUCA ANDREI", alias: "LUCA", position: "DEF" },
-    { number: 6, fullName: "FUENTES IGLESIAS, MATEO", alias: "FUENTES", position: "MID" },
-    { number: 17, fullName: "GARCIA LAVANGA", alias: "XAVI", position: "MID" },
-    { number: 7, fullName: "GIL GARCÍA", alias: "JESÚS", position: "FWD" },
-    { number: 22, fullName: "GONZÁLEZ VÁZQUEZ", alias: "ABRAHAM", position: "MID" },
-    { number: 15, fullName: "JIMENEZ MARTINEZ", alias: "CARLOS", position: "DEF" },
-    { number: 19, fullName: "MENU - MARQUE MORÓN", alias: "INTI", position: "FWD" },
-    { number: 18, fullName: "MERINO GARCIA, RAFAEL", alias: "RAFA", position: "DEF" },
-    { number: 9, fullName: "MOLINA BAYO, JUAN", alias: "JUANITO", position: "FWD" },
-    { number: 4, fullName: "PERALVO FERNANDEZ", alias: "DAVID", position: "DEF" },
+    // Porteros
     { number: 13, fullName: "REDONDO ROMERO, FRANCISCO", alias: "FRAN", position: "GK" },
-    { number: 8, fullName: "ROMERO GONZÁLEZ", alias: "HUGO", position: "MID" },
     { number: 1, fullName: "SANTIAGO DEL AGUILA", alias: "JORGE", position: "GK" },
+    // Defensas
+    { number: 5, fullName: "BLAGOEV MURIEL, JAIME RAFAEL", alias: "JAIME", position: "DEF" },
+    { number: 2, fullName: "CHACON GARCIA, DIEGO", alias: "CHACON", position: "DEF" },
     { number: 3, fullName: "SANTOS PASCUAL", alias: "TIAGO", position: "DEF" },
-    { number: 16, fullName: "VOLTAS LOPEZ, LUCAS", alias: "VOLTAS", position: "DEF" },
-    { number: 10, fullName: "YUNTA DELGADO", alias: "OMAR", position: "MID" },
-    { number: 14, fullName: "ZANZI AWUDU, FAWAZ SEIDU", alias: "FAWAZ", position: "FWD" },
-    { number: 21, fullName: "SKIBA", alias: "ARTUR", position: "MID" }
+    { number: 15, fullName: "JIMENEZ MARTINEZ", alias: "CARLOS", position: "DEF" },
+    { number: 12, fullName: "DUMITRU, LUCA ANDREI", alias: "LUCA", position: "DEF" },
+    { number: 6, fullName: "FUENTES IGLESIAS, MATEO", alias: "FUENTES", position: "DEF" },
+    // Mediocentros
+    { number: 20, fullName: "DA SILVA SECO, LEO SOCRATES", alias: "LEO", position: "MID" },
+    { number: 17, fullName: "GARCIA LAVANGA", alias: "XAVI", position: "MID" },
+    { number: 16, fullName: "VOLTAS LOPEZ, LUCAS", alias: "VOLTAS", position: "MID" },
+    { number: 22, fullName: "GONZÁLEZ VÁZQUEZ", alias: "ABRAHAM", position: "MID" },
+    { number: 8, fullName: "ROMERO GONZÁLEZ", alias: "HUGO", position: "MID" },
+    { number: 11, fullName: "CARPINTERO MONGE", alias: "TELMO", position: "MID" },
+    { number: 18, fullName: "MERINO GARCIA, RAFAEL", alias: "RAFA", position: "MID" },
+    { number: 4, fullName: "PERALVO FERNANDEZ", alias: "DAVID", position: "MID" },
+    { number: 14, fullName: "ZANZI AWUDU, FAWAZ SEIDU", alias: "FAWAZ", position: "MID" },
+    { number: 21, fullName: "SKIBA", alias: "ARTUR", position: "FWD" },
+    // Delanteros
+    { number: 10, fullName: "YUNTA DELGADO", alias: "OMAR", position: "FWD" },
+    { number: 9, fullName: "MOLINA BAYO, JUAN", alias: "JUANITO", position: "FWD" },
+    { number: 7, fullName: "GIL GARCÍA", alias: "JESÚS", position: "FWD" },
+    { number: 19, fullName: "MENU - MARQUE MORÓN", alias: "INTI", position: "FWD" }
 ];
 
 class MatchAnalyzer {
@@ -964,12 +968,19 @@ class MatchAnalyzer {
     renderAvailablePlayers() {
         const container = document.getElementById('availablePlayersList');
         container.innerHTML = '';
-        
+
         const availablePlayers = this.players.filter(p => !p.isStarter && !p.isUncalled);
-        
-        // Ordenar jugadores por dorsal (menor a mayor)
-        availablePlayers.sort((a, b) => a.number - b.number);
-        
+
+        // Ordenar jugadores por posición: Porteros > Defensas > Mediocentros > Delantero
+        const positionOrder = { 'GK': 1, 'DEF': 2, 'MID': 3, 'FWD': 4 };
+
+        // Ordenar por posición y luego por número
+        availablePlayers.sort((a, b) => {
+            const posOrder = positionOrder[a.position] - positionOrder[b.position];
+            if (posOrder !== 0) return posOrder;
+            return a.number - b.number;
+        });
+
         availablePlayers.forEach(player => {
             const playerCard = this.createPlayerCard(player);
             playerCard.addEventListener('click', () => this.selectPlayerForStarting(player));
@@ -1713,7 +1724,7 @@ class MatchAnalyzer {
         const positions = {
             'GK': 'Portero',
             'DEF': 'Defensa',
-            'MID': 'Centrocampista',
+            'MID': 'Mediocentro',
             'FWD': 'Delantero'
         };
         return positions[position] || position;

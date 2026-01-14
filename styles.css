@@ -141,6 +141,10 @@
     opacity: 0.95;
 }
 
+.app-title-icon {
+    filter: brightness(0) invert(1);
+}
+
 .app-title i {
     width: 24px;
     height: 24px;
